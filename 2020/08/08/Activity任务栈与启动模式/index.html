@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+<meta name="referrer" content="no-referrer"/>
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"right","display":"always","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="概念介绍 自底向上 ActivityRecord -&gt; TaskRecord -&gt; ActivityStack -&gt; ActivityDisplay -&gt; ActivityStackSupervisor  ActivityRecordActivityRecord 是 Activity 在 system_server 进程中的镜像，Activity 实例与 Activity">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Activity任务栈与启动模式">
+<meta property="og:url" content="http://example.com/2020/08/08/Activity%E4%BB%BB%E5%8A%A1%E6%A0%88%E4%B8%8E%E5%90%AF%E5%8A%A8%E6%A8%A1%E5%BC%8F/index.html">
+<meta property="og:site_name" content="宇飞 Blog">
+<meta property="og:description" content="概念介绍 自底向上 ActivityRecord -&gt; TaskRecord -&gt; ActivityStack -&gt; ActivityDisplay -&gt; ActivityStackSupervisor  ActivityRecordActivityRecord 是 Activity 在 system_server 进程中的镜像，Activity 实例与 Activity">
+<meta property="og:locale">
+<meta property="og:image" content="https://cdn.nlark.com/yuque/0/2020/png/1973465/1596877421495-fdfcc37f-737e-4dcd-891a-5449b58aedd4.png#align=left&display=inline&height=560&margin=%5Bobject%20Object%5D&name=image.png&originHeight=560&originWidth=1083&size=162660&status=done&style=none&width=1083">
+<meta property="og:image" content="https://cdn.nlark.com/yuque/0/2020/png/1973465/1597316368608-66218b35-2840-41ea-9697-87e2646c6861.png#align=left&display=inline&height=542&margin=%5Bobject%20Object%5D&name=image.png&originHeight=722&originWidth=734&size=62775&status=done&style=none&width=551">
+<meta property="article:published_time" content="2020-08-08T09:03:34.000Z">
+<meta property="article:modified_time" content="2021-03-09T06:24:11.796Z">
+<meta property="article:author" content="蔡宇飞">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://cdn.nlark.com/yuque/0/2020/png/1973465/1596877421495-fdfcc37f-737e-4dcd-891a-5449b58aedd4.png#align=left&display=inline&height=560&margin=%5Bobject%20Object%5D&name=image.png&originHeight=560&originWidth=1083&size=162660&status=done&style=none&width=1083">
+
+<link rel="canonical" href="http://example.com/2020/08/08/Activity%E4%BB%BB%E5%8A%A1%E6%A0%88%E4%B8%8E%E5%90%AF%E5%8A%A8%E6%A8%A1%E5%BC%8F/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-Hans'
+  };
+</script>
+
+  <title>Activity任务栈与启动模式 | 宇飞 Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">宇飞 Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">个人技术博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-首页">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-关于">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-标签">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-分类">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-归档">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+  <meta name="referrer" content="no-referrer"/>
+
+  
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2020/08/08/Activity%E4%BB%BB%E5%8A%A1%E6%A0%88%E4%B8%8E%E5%90%AF%E5%8A%A8%E6%A8%A1%E5%BC%8F/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/header.jpg">
+      <meta itemprop="name" content="蔡宇飞">
+      <meta itemprop="description" content="努力学习，努力成长！">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="宇飞 Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Activity任务栈与启动模式
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2020-08-08 09:03:34" itemprop="dateCreated datePublished" datetime="2020-08-08T09:03:34+00:00">2020-08-08</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2021-03-09 06:24:11" itemprop="dateModified" datetime="2021-03-09T06:24:11+00:00">2021-03-09</time>
+              </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><img src="https://cdn.nlark.com/yuque/0/2020/png/1973465/1596877421495-fdfcc37f-737e-4dcd-891a-5449b58aedd4.png#align=left&display=inline&height=560&margin=%5Bobject%20Object%5D&name=image.png&originHeight=560&originWidth=1083&size=162660&status=done&style=none&width=1083" alt="image.png"></p>
+<h2 id="概念介绍"><a href="#概念介绍" class="headerlink" title="概念介绍"></a>概念介绍</h2><blockquote>
+<p>自底向上 ActivityRecord -&gt; TaskRecord -&gt; ActivityStack -&gt; ActivityDisplay -&gt; ActivityStackSupervisor</p>
+</blockquote>
+<h3 id="ActivityRecord"><a href="#ActivityRecord" class="headerlink" title="ActivityRecord"></a>ActivityRecord</h3><p>ActivityRecord 是 Activity 在 system_server 进程中的镜像，Activity 实例与 ActivityRecord 实例一一对应。ActivityRecord 用来存储 Activity 的信息，如所在的进程名称，应用的包名，所在的任务栈的 taskAffinity 等。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">ActivityRecord</span> <span class="keyword">extends</span> <span class="title">ConfigurationContainer</span> </span>&#123;</span><br><span class="line">    <span class="keyword">final</span> ComponentName realActivity;  <span class="comment">// the intent component, or target of an alias.</span></span><br><span class="line">    <span class="keyword">final</span> String shortComponentName; <span class="comment">// the short component name of the intent</span></span><br><span class="line">    <span class="keyword">final</span> String packageName; <span class="comment">// the package implementing intent&#x27;s component</span></span><br><span class="line">    <span class="keyword">final</span> String processName; <span class="comment">// process where this component wants to run</span></span><br><span class="line">    <span class="keyword">final</span> String taskAffinity; <span class="comment">// as per ActivityInfo.taskAffinity</span></span><br><span class="line">    <span class="comment">//...省略其他</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">//其中储存了TaskRecord对象</span></span><br><span class="line">    <span class="keyword">private</span> TaskRecord task;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="TaskRecord"><a href="#TaskRecord" class="headerlink" title="TaskRecord"></a>TaskRecord</h3><p>TaskRecord 表示任务栈，用于记录 Activity 开启的先后顺序。其所存放的 Activity 是不支持重新排序的，只能根据压栈和出栈操作更改 Activity 的顺序。有了 TaskRecord，Android 系统才能知道当一个 Activity 退出时，接下来该显示哪一个 Activity。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">TaskRecord</span> </span>&#123;</span><br><span class="line">    <span class="comment">/** List of all activities in the task arranged in history order */</span></span><br><span class="line">    <span class="comment">//  翻译：按历史顺序排列的任务中所有活动的列表</span></span><br><span class="line">    <span class="keyword">final</span> ArrayList&lt;ActivityRecord&gt; mActivities;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//其所处的ActivityStack</span></span><br><span class="line">    <span class="keyword">private</span> ActivityStack mStack;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="ActivityStack"><a href="#ActivityStack" class="headerlink" title="ActivityStack"></a><strong>ActivityStack</strong></h3><p>ActivityStack 是一个管理类，管理了一系列的 TaskRecord，通过 mStackId 来唯一标识。其内部维护了 TaskRecord 的列表，因此从 Activity 任务栈这一角度来说，ActivityStack 也可以理解为 Activity 堆栈。ActivityStack 并不是开机就创建的，而是在需要时才创建。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">ActivityStack</span> <span class="keyword">extends</span> <span class="title">ConfigurationContainer</span> </span>&#123;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment"> 	* The back history of all previous (and possibly still running) activities.</span></span><br><span class="line"><span class="comment"> 	* It contains #TaskRecord objects.</span></span><br><span class="line"><span class="comment"> 	*/</span></span><br><span class="line">	<span class="keyword">private</span> <span class="keyword">final</span> ArrayList&lt;TaskRecord&gt; mTaskHistory = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>ActivityStack 的种类一共有 5 种：</p>
+<ol>
+<li><strong>HOME STACK：</strong></li>
+</ol>
+<p>HOME_STACK_ID 标识的 ActivityStack 主要维护了 launcheractivity 和 recentactivity 所在的 TaskRecord</p>
+<ol start="2">
+<li><strong>FREEFORM STACK：</strong></li>
+</ol>
+<p>FREEFORM_WORKSPACE_STACK_ID 标识的 ActivityStack 主要维护了 FREEFORM 模式下的 TaskRecord</p>
+<ol start="3">
+<li><strong>DOCKED STACK：</strong></li>
+</ol>
+<p>分屏的应用进入分屏模式后会在 DOCKED_STACK_ID 标识的 ActivityStack 中</p>
+<ol start="4">
+<li><strong>PINNED STACK：</strong></li>
+</ol>
+<p>进入画中画模式之后会在 PINNED_STACK_ID 标识的 ActivityStack 中。</p>
+<ol start="5">
+<li><strong>FULLSCREEN STACK：</strong></li>
+</ol>
+<p>一般情况下，我们接触到的绝大部分都是在 FULLSCREEN_WORKSPACE_STACK_ID(全屏显示)标识的 ActivityStack 中。</p>
+<h3 id="ActivityDisplay"><a href="#ActivityDisplay" class="headerlink" title="ActivityDisplay"></a>ActivityDisplay</h3><p>他是显示屏的抽象，每一个 ActivityDisplay 代表一块屏幕，在开机过程中 AMS 会根据 DisplayManager 的 Display 信息在 AMS 中创建 ActivityDisplay。一般而言（即只有一个屏幕时），ActivityDisplay 为系统唯一。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">ActivityDisplay</span> <span class="keyword">extends</span> ... <span class="keyword">implements</span> ...</span>&#123;</span><br><span class="line">    <span class="comment">//此显示器上的所有堆栈</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> ArrayList&lt;ActivityStack&gt; mStacks = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> ActivityStack mPreferredTopFocusableStack;</span><br><span class="line">    <span class="keyword">private</span> ActivityStack mLastFocusedStack;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Cached reference to some special stacks we tend to get a lot so we don&#x27;t need to loop</span></span><br><span class="line">    <span class="comment">// through the list to find them.</span></span><br><span class="line">    <span class="comment">// 对某些特殊堆栈的缓存引用往往会得到很多，因此我们不需要循环遍历列表来查找它们。</span></span><br><span class="line">    <span class="keyword">private</span> ActivityStack mHomeStack = <span class="keyword">null</span>;</span><br><span class="line">    <span class="keyword">private</span> ActivityStack mRecentsStack = <span class="keyword">null</span>;</span><br><span class="line">    <span class="keyword">private</span> ActivityStack mPinnedStack = <span class="keyword">null</span>;</span><br><span class="line">    <span class="keyword">private</span> ActivityStack mSplitScreenPrimaryStack = <span class="keyword">null</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//......</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在目前搜索到的其他相关文章中，ActivityDisplay 被介绍为 ActivityStackSupervisor 的内部类，封装了 ActivityStack 管理的一些方法。而 ActivityStackSupervisor 中管理这一些特殊的 ActivityStack。</p>
+<p>不过我阅读源码，ActivityDisplay 并非 ActivityStackSupervisor 的内部类。而例如 mHomeStack 这类的特殊 Stack 也被定义在 ActivityDisplay 中。</p>
+<p>进入 ActivityStackSupervisor.java 中查找，并未发现该类，反而为一个名为 ActivityStmFocusedStackackSupervisor 的类。该类中定义了 ActivityStackSupervisor 的构造方法？？？很奇怪。同时注释显示此类将被废弃。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// <span class="doctag">TODO:</span> This class has become a dumping ground. Let&#x27;s</span></span><br><span class="line"><span class="comment">// - Move things relating to the hierarchy to RootWindowContainer</span></span><br><span class="line"><span class="comment">// - Move things relating to activity life cycles to maybe a new class called ActivityLifeCycler</span></span><br><span class="line"><span class="comment">// - Move interface things to ActivityTaskManagerService.</span></span><br><span class="line"><span class="comment">// - All other little things to other files.</span></span><br></pre></td></tr></table></figure>
+
+<p>应该与 AndroidSDK 版本有关系。我的电脑上的 SDK 版本为 API29。待其他时间看一看老版本的 SDK。</p>
+<h3 id="ActivityStackSupervisor"><a href="#ActivityStackSupervisor" class="headerlink" title="ActivityStackSupervisor"></a>ActivityStackSupervisor</h3><p>刚刚已经说了该类存在的一些问题。目前问题待解决。在之前版本的 SDK，搜索得知，ActivityStackSupervisor 对象在 AMS 初始化的时候被创建，负责 ActivityStack 的管理，其中内置了 mHomeStack 等。</p>
+<h2 id="Activity-启动流程相关分析"><a href="#Activity-启动流程相关分析" class="headerlink" title="Activity 启动流程相关分析"></a>Activity 启动流程相关分析</h2><p><img src="https://cdn.nlark.com/yuque/0/2020/png/1973465/1597316368608-66218b35-2840-41ea-9697-87e2646c6861.png#align=left&display=inline&height=542&margin=%5Bobject%20Object%5D&name=image.png&originHeight=722&originWidth=734&size=62775&status=done&style=none&width=551" alt="image.png"><br>关于 Activity 的启动流程，还是比较复杂的。这个之后再看。这里主要分析一下与前文相关的内容。对上图简单总结一下：</p>
+<ol>
+<li>startActivity 时首先会创建一个 ActivityRecord。</li>
+<li>如果有需要，会创建一个 TaskRecord，并把这个 TaskRecord 加入到 ActivityStack 中。</li>
+<li>将 ActivityRecord 添加到 TaskRecord 的栈顶。</li>
+</ol>
+<h2 id="Activity-启动模式"><a href="#Activity-启动模式" class="headerlink" title="Activity 启动模式"></a>Activity 启动模式</h2><p>回顾一下四种启动模式：</p>
+<p>设 3 个 Activity [ A , B , C ]，他们都可以跳转至任意的 Activity。</p>
+<ul>
+<li><p><strong>standard</strong><br>standard 为默认方法。当在 AndroidManifest.xml 之中不设置 launchMode 属性时，即使用这个模式。在此模式下，<strong>可以有多个相同的实例，也允许多个相同的 Activity 相叠加</strong>。<br>当我们按 ABCBBCAC 顺序启动 Activity 时 ，其在任务栈中也是以相同顺序排列，即 ABCBBCAC。当不断点击返回键退出时，也将从栈顶开始按启动的逆序相继销毁。</p>
+</li>
+<li><p><strong>singleTop</strong><br>栈顶复用模式。此模式下，可以<strong>允许拥有多个实例，但不允许多个相同的 Activity 叠加</strong>。<br>当我们以 ABCABC 的顺序启动时，由于每一步栈顶皆不相同，所以其与 standard 模式相同，即在任务栈中也是以 ABCABC 形式排列的。而当以 AB<strong>CCC</strong>B 的顺序启动时，其在任务栈中为 ABCB。因为在此模式下，当栈顶的 Activity 再次启动时，不创建新 Activity，而是会调用 onNewIntent() 方法 。</p>
+</li>
+<li><p><strong>singleTask</strong><br>栈内复用模式。SingleTask 模式的 Activity<strong>在同一个任务栈内只有一个实例</strong>，如果 Activity 已经位于栈顶，系统不会创建新的 Activity 实例，而是调用 onNewIntent 方法 ; 当 Activity 已经存在但不位于栈顶时，系统就会<strong>将已存在的那个 Activity 上面的所有 Activity 出栈销毁，并调用该 Activity 的 onNewIntent 方法</strong>。<br>例如，目前栈中情况为 ABCAC，设 B 为 singleTask 模式。当再次启动 B_Activity 时 , B 上面的元素全部被销毁，然后调用 B 的 onNewIntent 方法。此时栈为 AB。</p>
+</li>
+<li><p><strong>singleInstance</strong><br>全局唯一模式。<strong>整个手机操作系统里面只有一个实例存在。不同的应用去打开这个 Activity 共享公用的同一个 Activity。</strong><br>singleInstance 模式也是单例的，但和 singleTask 不同，singleTask 只是任务栈内单例，系统里是可以有多个 singleTask 实例的，而 singleInstance 在整个系统里只有一个实例。<br>当 singleInstance 模式的 Activity 启动时，系统会创建一个<strong>新的任务栈</strong>，他会运行在这个单独、独立的任务栈里面，并且任务栈里面只有他一个实例存在。 如果系统中再次启动一个这样的 Activiyt，已经存在了一个实例，那么会把它<strong>所在的任务调度到前台，并重用这个实例 。</strong></p>
+</li>
+</ul>
+<p>以上内容是挺早之前做的笔记，结合刚刚看的内容，对任务栈以及 singleInstance 的理解更加的明朗了。singleInstance 其实就是新建了一个 TaskRecord 来放这个 ActivityRecord。其他模式都只是对 TaskRecord 中 ActivityRecord 列表的位置操作罢了。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/08/08/%E8%A7%82%E5%AF%9F%E8%80%85%E6%A8%A1%E5%BC%8F/" rel="prev" title="观察者模式">
+      <i class="fa fa-chevron-left"></i> 观察者模式
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/08/14/RecyclerView%E5%9B%9B%E7%BA%A7%E7%BC%93%E5%AD%98/" rel="next" title="RecyclerView四级缓存">
+      RecyclerView四级缓存 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E5%BF%B5%E4%BB%8B%E7%BB%8D"><span class="nav-number">1.</span> <span class="nav-text">概念介绍</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#ActivityRecord"><span class="nav-number">1.1.</span> <span class="nav-text">ActivityRecord</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#TaskRecord"><span class="nav-number">1.2.</span> <span class="nav-text">TaskRecord</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ActivityStack"><span class="nav-number">1.3.</span> <span class="nav-text">ActivityStack</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ActivityDisplay"><span class="nav-number">1.4.</span> <span class="nav-text">ActivityDisplay</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ActivityStackSupervisor"><span class="nav-number">1.5.</span> <span class="nav-text">ActivityStackSupervisor</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Activity-%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B%E7%9B%B8%E5%85%B3%E5%88%86%E6%9E%90"><span class="nav-number">2.</span> <span class="nav-text">Activity 启动流程相关分析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Activity-%E5%90%AF%E5%8A%A8%E6%A8%A1%E5%BC%8F"><span class="nav-number">3.</span> <span class="nav-text">Activity 启动模式</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="蔡宇飞"
+      src="/images/header.jpg">
+  <p class="site-author-name" itemprop="name">蔡宇飞</p>
+  <div class="site-description" itemprop="description">努力学习，努力成长！</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">42</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">2</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2019 – 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">caiyufei</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  <meta name="referrer" content="no-referrer"/>
+
+
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

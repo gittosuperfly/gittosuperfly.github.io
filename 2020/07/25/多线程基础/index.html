@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+<meta name="referrer" content="no-referrer"/>
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"right","display":"always","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="基本概念程序与进程**程序是一组有序指令的集合，是一种静态的概念。进程是程序的一次执行，属于一种动态的概念。 在多道程序环境下，程序的执行属于并发执行，此时它们将失去封闭性，并具有间断性，运行结果也将不可再现。为了能使多个程序可以并发执行，提高资源利用率和系统吞吐量，并且可以对并发执行的程序加以描述和控制，引入进程的概念。 进程与线程**线程的引入主要是为了减少程序在并发执行时所付出的时空开销。一">
+<meta property="og:type" content="article">
+<meta property="og:title" content="多线程基础">
+<meta property="og:url" content="http://example.com/2020/07/25/%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%9F%BA%E7%A1%80/index.html">
+<meta property="og:site_name" content="宇飞 Blog">
+<meta property="og:description" content="基本概念程序与进程**程序是一组有序指令的集合，是一种静态的概念。进程是程序的一次执行，属于一种动态的概念。 在多道程序环境下，程序的执行属于并发执行，此时它们将失去封闭性，并具有间断性，运行结果也将不可再现。为了能使多个程序可以并发执行，提高资源利用率和系统吞吐量，并且可以对并发执行的程序加以描述和控制，引入进程的概念。 进程与线程**线程的引入主要是为了减少程序在并发执行时所付出的时空开销。一">
+<meta property="og:locale">
+<meta property="og:image" content="https://cdn.nlark.com/yuque/0/2020/png/1973465/1595819976587-c6a0da91-a7b5-43f2-b767-4fd3707630f9.png#align=left&display=inline&height=570&margin=%5Bobject%20Object%5D&name=image.png&originHeight=570&originWidth=835&size=159659&status=done&style=none&width=835">
+<meta property="article:published_time" content="2020-07-25T10:25:41.000Z">
+<meta property="article:modified_time" content="2021-03-09T06:24:12.281Z">
+<meta property="article:author" content="蔡宇飞">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://cdn.nlark.com/yuque/0/2020/png/1973465/1595819976587-c6a0da91-a7b5-43f2-b767-4fd3707630f9.png#align=left&display=inline&height=570&margin=%5Bobject%20Object%5D&name=image.png&originHeight=570&originWidth=835&size=159659&status=done&style=none&width=835">
+
+<link rel="canonical" href="http://example.com/2020/07/25/%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%9F%BA%E7%A1%80/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-Hans'
+  };
+</script>
+
+  <title>多线程基础 | 宇飞 Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">宇飞 Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">个人技术博客</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-首页">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-关于">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-标签">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-分类">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-归档">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+  <meta name="referrer" content="no-referrer"/>
+
+  
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2020/07/25/%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%9F%BA%E7%A1%80/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/header.jpg">
+      <meta itemprop="name" content="蔡宇飞">
+      <meta itemprop="description" content="努力学习，努力成长！">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="宇飞 Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          多线程基础
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2020-07-25 10:25:41" itemprop="dateCreated datePublished" datetime="2020-07-25T10:25:41+00:00">2020-07-25</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2021-03-09 06:24:12" itemprop="dateModified" datetime="2021-03-09T06:24:12+00:00">2021-03-09</time>
+              </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="基本概念"><a href="#基本概念" class="headerlink" title="基本概念"></a>基本概念</h2><p><strong>程序与进程</strong><br>**<br>程序是一组有序指令的集合，是一种静态的概念。<br>进程是程序的一次执行，属于一种动态的概念。</p>
+<p>在多道程序环境下，程序的执行属于并发执行，此时它们将失去封闭性，并具有间断性，运行结果也将不可再现。为了能使多个程序可以并发执行，提高资源利用率和系统吞吐量，并且可以对并发执行的程序加以描述和控制，引入进程的概念。</p>
+<p><strong>进程与线程</strong><br>**<br>线程的引入主要是为了减少程序在并发执行时所付出的时空开销。<br>一般而言，为了能使程序能够并发执行，系统必须进行创建进程、撤销进程以及进程切换等操作，而进程作为一个资源的拥有者，在进行这些操作时必须为之付出较大的时空开销。</p>
+<p>线程和进程的区别主要如下：</p>
+<ol>
+<li>进程是系统中拥有资源的一个基本单位，线程本身并不拥有系统资源，同一进程内的线程共享进程拥有的资源。</li>
+<li>进程仅是资源分配的基本单位，线程是调度和分派的基本单位。</li>
+<li>进程之间相对比较独立，彼此不会互相影响，而线程共享同一个进程下面的资源，可以互相通信影响。</li>
+<li>线程的并发性更高，可以启动多个线程执行同程序的不同部分。</li>
+</ol>
+<p><strong>并行和并发</strong><br>**<br>并行是指两个或多个线程在<strong>同一时刻</strong>执行。<br>并发是指两个或多个线程在**同一时间间隔**内发生。<br>如果程序同时开启的线程数小于 CPU 的核数，那么不同进程的线程就可以分配给不同的 CPU 来运行，这就是并行，如果线程数多于 CPU 的核数，那就需要并发技术。</p>
+<h2 id="线程间通信方式"><a href="#线程间通信方式" class="headerlink" title="线程间通信方式"></a>线程间通信方式</h2><ul>
+<li>锁机制：包括互斥锁、条件变量、读写锁<ul>
+<li>互斥锁提供了以排他方式防止数据结构被并发修改的方法。</li>
+<li>读写锁允许多个线程同时读共享数据，而对写操作是互斥的。</li>
+<li>条件变量可以以原子的方式阻塞进程，直到某个特定条件为真为止。对条件的测试是在互斥锁的保护下进行的。条件变量始终与互斥锁一起使用。</li>
+</ul>
+</li>
+<li>信号量机制(Semaphore)：包括无名线程信号量和命名线程信号量</li>
+<li>信号机制(Signal)：类似进程间的信号处理<blockquote>
+<p>线程间的通信目的主要是用于线程同步，所以线程没有像进程通信中的用于数据交换的通信机制。</p>
+</blockquote>
+</li>
+</ul>
+<h2 id="开启线程"><a href="#开启线程" class="headerlink" title="开启线程"></a>开启线程</h2><p>在 Java 中，开启线程的方法常用的有三种：</p>
+<ol>
+<li>任务类继承 **Thread **类，并重写 run() 方法</li>
+<li>任务类实现 **Runnable **接口，并实现 run() 方法</li>
+<li>任务类实现 **Callable **接口，并实现 call() 方法</li>
+</ol>
+<p>示例代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ThreadDemo</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        <span class="comment">//1. extends Thread</span></span><br><span class="line">        <span class="keyword">new</span> TestThread1().start();</span><br><span class="line"></span><br><span class="line">        <span class="comment">//2. implements Runnable</span></span><br><span class="line">        <span class="keyword">new</span> Thread(<span class="keyword">new</span> TestThread2()).start();</span><br><span class="line"></span><br><span class="line">        <span class="comment">//3. implements Callable</span></span><br><span class="line">        FutureTask&lt;String&gt; task = <span class="keyword">new</span> FutureTask&lt;&gt;(<span class="keyword">new</span> TestThread3());</span><br><span class="line">        <span class="keyword">new</span> Thread(task).start();</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            System.out.println(task.get());</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">TestThread1</span> <span class="keyword">extends</span> <span class="title">Thread</span> </span>&#123;</span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            System.out.println(<span class="string">&quot;extends Thread&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">TestThread2</span> <span class="keyword">implements</span> <span class="title">Runnable</span> </span>&#123;</span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            System.out.println(<span class="string">&quot;implements Runnable&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">TestThread3</span> <span class="keyword">implements</span> <span class="title">Callable</span>&lt;<span class="title">String</span>&gt; </span>&#123;</span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> String <span class="title">call</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">            System.out.println(<span class="string">&quot;implements Callable&quot;</span>);</span><br><span class="line">            Thread.sleep(<span class="number">1000</span>);</span><br><span class="line">            <span class="keyword">return</span> <span class="string">&quot;this is call message!&quot;</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p><strong>Thread 和 Runnable 的区别:</strong></p>
+<p>如果一个类继承 Thread，则不适合资源共享；但是如果实现了 Runable 接口的话，则很容易的实现资源共享。一般而言推荐使用 Runnable。理由如下：</p>
+<ol>
+<li>适合多个相同的程序代码的线程去处理同一个资源</li>
+<li>可以避免 java 中的单继承的限制</li>
+<li>增加程序的健壮性，代码可以被多个线程共享，代码和数据独立</li>
+<li>线程池只能放入实现 Runable 或 callable 类线程，不能直接放入继承 Thread 的类</li>
+</ol>
+<h2 id="线程的状态"><a href="#线程的状态" class="headerlink" title="线程的状态"></a>线程的状态</h2><ul>
+<li><strong>新建状态（New）</strong><br>当线程对象对创建后，即进入了新建状态，如：Thread thread = new MyThread();</li>
+<li><strong>就绪状态（Runnable）</strong><br>当调用线程对象的 start()方法，线程即进入就绪状态。处于就绪状态的线程，只是说明此线程已经做好了准备，随时等待 CPU 调度执行，并不是说执行了 thread.start() 此线程立即就会执行。</li>
+<li><strong>运行状态（Running）</strong><br>当 CPU 开始调度处于就绪状态的线程时，此时线程才得以真正执行，即进入到运行状态。<br>就绪状态是进入到运行状态的唯一入口，也就是说，线程要想进入运行状态执行，首先必须处于就绪状态中。</li>
+<li><strong>阻塞状态（Blocked）</strong>处于运行状态中的线程由于某种原因，暂时放弃对 CPU 的使用权，停止执行，此时进入阻塞状态，直到其进入到就绪状态，才有机会再次被 CPU 调用以进入到运行状态。根据阻塞产生的原因不同，阻塞状态又可以分为三种：<ol>
+<li> 等待阻塞：运行状态中的线程执行 wait()方法，使本线程进入到等待阻塞状态。</li>
+<li> 同步阻塞：线程在获取 synchronized 同步锁失败(因为锁被其它线程所占用)，它会进入同步阻塞状态。</li>
+<li> 其他阻塞：通过调用线程的 sleep() 或 join() 或发出了 I/O 请求时，线程会进入到阻塞状态。当 sleep() 状态超时、join() 等待线程终止或者超时、或者 I/O 处理完毕时，线程重新转入就绪状态。</li>
+</ol>
+</li>
+<li><strong>死亡状态（Dead）</strong><br>线程执行完了或者因异常退出了 run()方法，该线程结束生命周期。</li>
+</ul>
+<p><img src="https://cdn.nlark.com/yuque/0/2020/png/1973465/1595819976587-c6a0da91-a7b5-43f2-b767-4fd3707630f9.png#align=left&display=inline&height=570&margin=%5Bobject%20Object%5D&name=image.png&originHeight=570&originWidth=835&size=159659&status=done&style=none&width=835" alt="image.png"></p>
+<h2 id="线程的调度"><a href="#线程的调度" class="headerlink" title="线程的调度"></a>线程的调度</h2><h3 id="线程优先级-setPriority"><a href="#线程优先级-setPriority" class="headerlink" title="线程优先级 setPriority()"></a>线程优先级 setPriority()</h3><p>在 Java 中，每个线程都有一个优先级，优先级高的线程会获得较多的运行机会。<br>默认情况下，线程会继承它的父线程的优先级。可以通过 Thread 类的 getPriority() 和 setPriority() 来得到或者设置线程的优先级。<br>线程的优先级范围是 1~10，默认情况下是 5。Java 中定义了三个描述线程优先级的常量：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">MAX_PRIORITY   == <span class="number">10</span></span><br><span class="line">NORM_PRIORITY  == <span class="number">5</span></span><br><span class="line">MIN_PRIORITY   == <span class="number">1</span></span><br></pre></td></tr></table></figure>
+
+<p>每当线程调度器要调度一个新的线程时，它会首先选择优先级较高的线程。然而线程优先级是高度依赖于操作系统的，在有些系统的 Java 虚拟机中，甚至会忽略线程的优先级。因此我们<strong>不应该将程序逻辑的正确性依赖于优先级</strong>。</p>
+<h3 id="线程睡眠-sleep"><a href="#线程睡眠-sleep" class="headerlink" title="线程睡眠 sleep()"></a>线程睡眠 sleep()</h3><p>Thread.sleep(long millis)方法，使线程转到阻塞状态。<br>millis 参数设定睡眠的时间，以毫秒为单位，但睡眠的时间不一定是确切的给定毫秒数，可能有一定的偏差，偏差与系统定时器和操作系统调度器的准确度和精度有关。<br>当睡眠结束后，就转为就绪（Runnable）状态。sleep()的平台移植性好。</p>
+<h3 id="线程等待-wait"><a href="#线程等待-wait" class="headerlink" title="线程等待 wait()"></a>线程等待 wait()</h3><p>Object 类中的 wait()方法，导致当前的线程等待，直到其他线程调用此对象的 notify() 方法或 notifyAll() 唤醒方法。这个两个唤醒方法也是 Object 类中的方法，行为等价于调用 wait(0) 一样。<br>wait()与 notify()必须要与 synchronized(Obj)一起使用，也就是 wait 与 notify 是针对已经获取了 Obj 锁进行操作：</p>
+<ul>
+<li>从语法角度来说就是 wait() 、notify 必须在 synchronized(Obj){…}语句块内。</li>
+<li>从功能上来说 wait 就是说线程在获取对象锁后，主动释放对象锁，同时本线程休眠。直到有其它线程调用对象的 notify()唤醒该线程，才能继续获取对象锁，并继续执行。</li>
+</ul>
+<p>如果调用 wait/ notify 方法时，当前线程没有持有对象锁，会抛出异常</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java.lang.IllegalMonitor-StateException</span><br></pre></td></tr></table></figure>
+
+<p>调用 notify 会把在条件队列中等待的线程唤醒并从队列中移除，但它不会释放对象锁，也就是说，只有在包含 notify 的 synchronized 代码块执行完后，等待的线程才会从 wait 调用中返回。</p>
+<h4 id="wait-和-sleep-的区别"><a href="#wait-和-sleep-的区别" class="headerlink" title="wait()和 sleep()的区别"></a>wait()和 sleep()的区别</h4><p><strong>共同点：</strong></p>
+<ol>
+<li>他们都是在多线程的环境下，都可以在程序的调用处阻塞指定的毫秒数，并返回。</li>
+<li>wait()和 sleep()都可以通过 interrupt()方法 打断线程的暂停状态 ，从而使线程立刻抛出 InterruptedException。</li>
+</ol>
+<p><strong>不同点：</strong></p>
+<ol>
+<li>Thread 类的方法：sleep()、yield()等<br>Object 的方法：wait()、notify()等</li>
+<li>每个对象都有一个锁来控制同步访问。Synchronized 关键字可以和对象的锁交互，来实现线程的同步。<br>sleep 方法没有释放锁，而 wait 方法释放了锁，使得其他线程可以使用同步控制块或者方法。</li>
+<li>wait，notify 和 notifyAll 只能在同步控制方法或者同步控制块里面使用，而 sleep 可以在任何地方使用 。</li>
+</ol>
+<h3 id="线程唤醒-notify-notifyAll"><a href="#线程唤醒-notify-notifyAll" class="headerlink" title="线程唤醒 notify()/notifyAll()"></a>线程唤醒 notify()/notifyAll()</h3><p>notify 方法可以唤醒等待对象锁的一个线程，使该线程拿到对象锁。所以如果有多个线程在等待一个对象，这个方法只会唤醒其中的一个，具体唤醒哪个线程取决于线程管理的操作系统实现。</p>
+<p>notifyAll 方法唤醒等待当前对象锁的所有线程，但哪一个将首先处理取决于操作系统的实现。</p>
+<p>一个使用 wait、notifyAll 的经典案例：</p>
+<h3 id="线程让步-yield"><a href="#线程让步-yield" class="headerlink" title="线程让步 yield()"></a>线程让步 yield()</h3><p>Thread.yield() 方法，让当前运行线程回到就绪状态，并把执行机会让给相同或者更高优先级的线程。但是，实际中无法保证 yield()达到让步目的，因为让步的线程还有可能被线程调度程序再次选中。</p>
+<h4 id="sleep-0-和-yield-的区别"><a href="#sleep-0-和-yield-的区别" class="headerlink" title="sleep(0)和 yield()的区别"></a>sleep(0)和 yield()的区别</h4><p>关于这两者是否有区别，与系统平台、Java 语言版本等各种因素有关。一般认为两者不是等效的，yield 让低优先级的线程有机会参与线程的竞争。而 sleep(0)则只是将机会让给了有相同优先级或更高优先级的线程。可以参考这个网页：</p>
+<h3 id="线程加入-join"><a href="#线程加入-join" class="headerlink" title="线程加入 join()"></a>线程加入 join()</h3><p>Thread 类 join()方法，等待其他线程终止。在当前线程中调用另一个线程的 join()方法，则当前线程转入阻塞状态，直到另一个进程运行结束，当前线程再由阻塞转为就绪状态。</p>
+<p>在很多情况下，主线程生成并启动了子线程，如果子线程里要进行大量的耗时的运算，主线程往往将于子线程之前结束。但是如果主线程处理完其他的事务后，需要用到子线程的处理结果，也就是主线程需要等待子线程执行完成之后再结束，这个时候就要用到 join()方法了。</p>
+<p>示例代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ThreadJoinDemo</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;main start&quot;</span>);</span><br><span class="line">        Thread child = <span class="keyword">new</span> Thread(<span class="keyword">new</span> ChildThread());</span><br><span class="line">        child.start();</span><br><span class="line">        child.join();</span><br><span class="line">        System.out.println(<span class="string">&quot;main end&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">ChildThread</span> <span class="keyword">implements</span> <span class="title">Runnable</span> </span>&#123;</span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">10</span>; i++) &#123;</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    Thread.sleep(<span class="number">300</span>);</span><br><span class="line">                &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                    e.printStackTrace();</span><br><span class="line">                &#125;</span><br><span class="line">                System.out.println(<span class="string">&quot;child &gt;&gt; &quot;</span> + i);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="后台线程-setDaemon"><a href="#后台线程-setDaemon" class="headerlink" title="后台线程 setDaemon()"></a>后台线程 setDaemon()</h3><p>通过 setDaemon(true)设置为后台线程。后台线程主要是为其他线程（相对可以称之为前台线程）提供服务，或“守护线程”。如 JVM 中的垃圾回收线程。当所有的前台线程都进入死亡状态时，后台线程会自动死亡。</p>
+<p>使用后台线程时需要注意以下几点：</p>
+<ol>
+<li>thread.setDaemon(true)必须在 thread.start()之前设置，否则会跑出一个 IllegalThreadStateException 异常。你不能把正在运行的常规线程设置为守护线程。</li>
+<li>在 Daemon 线程中产生的新线程也是 Daemon 的。</li>
+<li>守护线程不能用于去访问固有资源，比如读写操作或者计算逻辑。因为它会在任何时候甚至在一个操作的中间发生中断。</li>
+<li>Java 自带的多线程框架，比如 ExecutorService，会将守护线程转换为用户线程，所以如果要使用后台线程就不能用 Java 的线程池。</li>
+</ol>
+<h2 id="线程的中断"><a href="#线程的中断" class="headerlink" title="线程的中断"></a>线程的中断</h2><p>在 Java 中，停止一个线程的主要机制是中断。中断并不是强迫终止一个线程，它是一种协作机制，是给线程传递一个取消信号，但是由线程来决定如何以及何时退出。每个线程都有一个标志位，用来表示该线程是否被中断。</p>
+<p>Thread 类定义了如下关于中断的方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">interrupt</span><span class="params">()</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">isInterrupted</span><span class="params">()</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">boolean</span> <span class="title">interrupted</span><span class="params">()</span></span>;</span><br></pre></td></tr></table></figure>
+
+<p>interrupt() 中断目标线程，给目标线程发一个中断信号，线程被打上中断标记。<br>isInterrupted() 判断目标线程是否被中断，不会清除中断标记。<br>interrupted() 判断目标线程是否被中断，会清除中断标记。</p>
+<p>如果线程在运行中，且没有执行 IO 操作， interrupt 只是会设置线程的中断标志位，没有任何其他作用。线程应该在运行过程中合适的位置检查中断标志位，并做出相应的处理。</p>
+<p>例如：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ThreadInterrupt</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Thread testThread = <span class="keyword">new</span> Thread(() -&gt; &#123;</span><br><span class="line">            <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">                Thread.yield();</span><br><span class="line">                <span class="comment">// 响应中断</span></span><br><span class="line">                <span class="keyword">if</span> (Thread.currentThread().isInterrupted()) &#123;</span><br><span class="line">                    System.out.println(<span class="string">&quot;线程被中断，程序退出。&quot;</span>);</span><br><span class="line">                    <span class="keyword">return</span>;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">        testThread.start();</span><br><span class="line">        testThread.interrupt();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>另外，如果调用线程的 interrupt 方法时，该线程正在 wait/sleep/join，则该线程会立刻抛出 InterruptedException，在 catch 块中直接 return 即可安全地结束线程。</p>
+<p>示例代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ThreadMethods</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">        Thread thread = <span class="keyword">new</span> Thread(() -&gt; &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                Thread.sleep(<span class="number">5000</span>);</span><br><span class="line">            &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                System.out.println(<span class="string">&quot;线程休眠被中断，程序退出。&quot;</span>);</span><br><span class="line">                <span class="keyword">return</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">        thread.start();</span><br><span class="line">        Thread.sleep(<span class="number">1000</span>);</span><br><span class="line">        thread.interrupt();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>需要注意的是，InterruptedException 是线程自己从内部抛出的，并不是 interrupt()方法抛出的。对某一线程调用 interrupt()时，如果该线程正在执行普通的代码，那么该线程就不会抛出 InterruptedException。但是，一旦该线程进入到 wait()/sleep()/join()后，就会立刻抛出 InterruptedException。</p>
+<p>这里有个坑不得不提一下。看下面代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ThreadMethods</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">        Thread thread = <span class="keyword">new</span> Thread(() -&gt; &#123;</span><br><span class="line">            <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">                <span class="comment">// 响应中断</span></span><br><span class="line">                <span class="keyword">if</span> (Thread.currentThread().isInterrupted()) &#123;</span><br><span class="line">                    System.out.println(<span class="string">&quot;线程被中断，程序退出。&quot;</span>);</span><br><span class="line">                    <span class="keyword">return</span>;</span><br><span class="line">                &#125;</span><br><span class="line"></span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    Thread.sleep(<span class="number">3000</span>);</span><br><span class="line">                &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                    System.out.println(<span class="string">&quot;线程休眠被中断&quot;</span>);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">        thread.start();</span><br><span class="line">        Thread.sleep(<span class="number">1000</span>);</span><br><span class="line">        thread.interrupt();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里 sleep 被终端，抛出 InterruptedException，程序继续进入循环，到了 if 判断这里却并未退出，而是继续运行。为什么会这样呢？</p>
+<p>来看看 sleep 的源码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * ......</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@throws</span>  InterruptedException</span></span><br><span class="line"><span class="comment"> *          if any thread has interrupted the current thread. The</span></span><br><span class="line"><span class="comment"> *          &lt;i&gt;interrupted status&lt;/i&gt; of the current thread is</span></span><br><span class="line"><span class="comment"> *          cleared when this exception is thrown.</span></span><br><span class="line"><span class="comment"> *  翻译：如果有线程中断了当前线程。引发此异常时，当前线程的中断状态将被清除。</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">native</span> <span class="keyword">void</span> <span class="title">sleep</span><span class="params">(<span class="keyword">long</span> millis)</span> <span class="keyword">throws</span> InterruptedException</span>;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>可以看出 sleep() 方法被中断后会清除中断标记，所以循环会继续运行。这时候就需要在 sleep 的 catch 中重新设置中断状态，程序就可正常运行。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/07/24/%E7%94%9F%E4%BA%A7%E8%80%85!%E6%B6%88%E8%B4%B9%E8%80%85%E6%A8%A1%E5%9E%8B/" rel="prev" title="生产者/消费者模型">
+      <i class="fa fa-chevron-left"></i> 生产者/消费者模型
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/07/28/Java%E4%B8%AD%E7%9A%84%E9%94%81/" rel="next" title="Java中的锁">
+      Java中的锁 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E6%A6%82%E5%BF%B5"><span class="nav-number">1.</span> <span class="nav-text">基本概念</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B%E9%97%B4%E9%80%9A%E4%BF%A1%E6%96%B9%E5%BC%8F"><span class="nav-number">2.</span> <span class="nav-text">线程间通信方式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%80%E5%90%AF%E7%BA%BF%E7%A8%8B"><span class="nav-number">3.</span> <span class="nav-text">开启线程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B%E7%9A%84%E7%8A%B6%E6%80%81"><span class="nav-number">4.</span> <span class="nav-text">线程的状态</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B%E7%9A%84%E8%B0%83%E5%BA%A6"><span class="nav-number">5.</span> <span class="nav-text">线程的调度</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B%E4%BC%98%E5%85%88%E7%BA%A7-setPriority"><span class="nav-number">5.1.</span> <span class="nav-text">线程优先级 setPriority()</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B%E7%9D%A1%E7%9C%A0-sleep"><span class="nav-number">5.2.</span> <span class="nav-text">线程睡眠 sleep()</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B%E7%AD%89%E5%BE%85-wait"><span class="nav-number">5.3.</span> <span class="nav-text">线程等待 wait()</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#wait-%E5%92%8C-sleep-%E7%9A%84%E5%8C%BA%E5%88%AB"><span class="nav-number">5.3.1.</span> <span class="nav-text">wait()和 sleep()的区别</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B%E5%94%A4%E9%86%92-notify-notifyAll"><span class="nav-number">5.4.</span> <span class="nav-text">线程唤醒 notify()&#x2F;notifyAll()</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B%E8%AE%A9%E6%AD%A5-yield"><span class="nav-number">5.5.</span> <span class="nav-text">线程让步 yield()</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#sleep-0-%E5%92%8C-yield-%E7%9A%84%E5%8C%BA%E5%88%AB"><span class="nav-number">5.5.1.</span> <span class="nav-text">sleep(0)和 yield()的区别</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B%E5%8A%A0%E5%85%A5-join"><span class="nav-number">5.6.</span> <span class="nav-text">线程加入 join()</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%8E%E5%8F%B0%E7%BA%BF%E7%A8%8B-setDaemon"><span class="nav-number">5.7.</span> <span class="nav-text">后台线程 setDaemon()</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B%E7%9A%84%E4%B8%AD%E6%96%AD"><span class="nav-number">6.</span> <span class="nav-text">线程的中断</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="蔡宇飞"
+      src="/images/header.jpg">
+  <p class="site-author-name" itemprop="name">蔡宇飞</p>
+  <div class="site-description" itemprop="description">努力学习，努力成长！</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">42</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">2</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2019 – 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">caiyufei</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  <meta name="referrer" content="no-referrer"/>
+
+
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
